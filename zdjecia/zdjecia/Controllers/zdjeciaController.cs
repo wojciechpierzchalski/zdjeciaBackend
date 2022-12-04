@@ -4,10 +4,13 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+using System.Web.Http.Cors;
 using zdjecia.Models;
 
 namespace zdjecia.Controllers
 {
+    [EnableCors(origins: "*", headers: "*", methods: "*")] // tune to your needs
+    [RoutePrefix("")]
     public class zdjeciaController : ApiController
     {
             public IEnumerable<zdjeciatb> Get()

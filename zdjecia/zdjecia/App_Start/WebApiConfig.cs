@@ -9,6 +9,8 @@ namespace zdjecia
     {
         public static void Register(HttpConfiguration config)
         {
+            // Włącznie Cors
+            config.EnableCors();
             // Konfiguracja i usługi składnika Web API
 
             // Trasy składnika Web API
