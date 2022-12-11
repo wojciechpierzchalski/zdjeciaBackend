@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "wrEQvDcM11nPSf55KgWnZAtykaEcgSDeJa0nhIt+dLY=",
+  "Source": "PhotosServer",
+  "BasePath": "_content/PhotosServer",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
