@@ -1,4 +1,6 @@
-﻿namespace PhotosServer.Models
+﻿using System.Drawing;
+
+namespace PhotosServer.Models
 {
     public class Photos
     {

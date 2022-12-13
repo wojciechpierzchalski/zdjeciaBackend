@@ -5,9 +5,6 @@ using System.Data.SqlClient;
 using System.IO;
 using System.Drawing;
 
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace PhotosServer.Controllers
 {
     [Route("api/[controller]")]
@@ -19,7 +16,7 @@ namespace PhotosServer.Controllers
         {
             _configuration = configuration;
         }
-        
+
         // GET: api/<PhotosController>
         [HttpGet]
         public JsonResult Get()
@@ -32,25 +29,24 @@ namespace PhotosServer.Controllers
             using (SqlConnection connection = new SqlConnection(sqlDataSource))
             {
                 connection.Open();
-                using(SqlCommand myCommand=new SqlCommand(query,connection))
+                using (SqlCommand myCommand = new SqlCommand(query, connection))
                 {
                     myReader = myCommand.ExecuteReader();
                     table.Load(myReader);
                     myReader.Close();
                     connection.Close();
                 }
-                
+
             }
             return new JsonResult(table);
         }
 
         // GET api/<PhotosController>/5
         [HttpGet("{id}")]
-        public Photos Get(int id)
+        public IActionResult Get(int id)
         {
             string sqlDataSource = _configuration.GetConnectionString("PhotoAppCon");
             SqlDataReader myReader;
-            Photos photo = new Photos();
             string query = $@" SELECT * FROM photos WHERE PhotoID = {id}";
             DataTable table = new DataTable();
             using (SqlConnection connection = new SqlConnection(sqlDataSource))
@@ -58,33 +54,48 @@ namespace PhotosServer.Controllers
                 connection.Open();
                 using (SqlCommand myCommand = new SqlCommand(query, connection))
                 {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    connection.Close();
+                }
+
+            }
+            return new JsonResult(table);
+
+        }
+
+       
+
+        //GET serwer/api/Photos/GetPhoto/ID
+        [HttpGet("GetPhoto/{id}")] 
+        public IActionResult SendImage(int id)
+        {
+            string sqlDataSource = _configuration.GetConnectionString("PhotoAppCon");
+            SqlDataReader myReader;
+            string query = $@" SELECT PhotoPath FROM photos WHERE PhotoID = {id}";
+            DataTable table = new DataTable();
+            string photoPath = "";
+            using (SqlConnection connection = new SqlConnection(sqlDataSource))
+            {
+                connection.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, connection))
+                {
                     using (var reader = myCommand.ExecuteReader())
                     {
-                        while(reader.Read())
+                        while (reader.Read())
                         {
-                            photo.PhotoID = (int)reader.GetValue(0);
-                            photo.PhotoName = (string)reader.GetValue(1);
-                            photo.PhotoFolder = (string)reader.GetValue(2);
-                            photo.PhotoDate = ((DateTime)reader.GetValue(3)).ToString();
-                            photo.PhotoPath = (string)reader.GetValue(4);
+                            photoPath = reader.GetValue(0).ToString();
                         }
-                        
-
                     }
                     connection.Close();
                 }
-                
-            }
-            // PROBLEM NUMER 1 NEI WADOMO JEK TO PZESLADZ NA ZMINNA PGOTO
-            using (var stream = new FileStream(photo.PhotoPath,FileMode.Open))
-            {
-                Image image = Image.FromStream(stream);
-                photo.PhotoFile = (IFormFile)image;
-                
-            }
-            return photo;
-        }
 
+            }
+
+            Byte[] b = System.IO.File.ReadAllBytes(photoPath);
+            return File(b, "image/jpeg");
+        }
         // POST api/<PhotosController>
         [HttpPost]
         public void Post([FromForm] Photos photo)
