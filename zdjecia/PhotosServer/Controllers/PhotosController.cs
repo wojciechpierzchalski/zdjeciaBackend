@@ -103,7 +103,7 @@ namespace PhotosServer.Controllers
             string sqlDataSource = _configuration.GetConnectionString("PhotoAppCon");
             photo.PhotoPath = $"../../../Zdjecia/{photo.PhotoFile.FileName}";
             SqlDataReader myReader;
-            string query = $@" INSERT INTO photos VALUES(@PhotoName, @PhotoFolder, @PhotoDate, @PhotoPath)";
+            string query = $@" INSERT INTO photos VALUES(@PhotoName, @PhotoDate, @PhotoPath,  @FolderID)";
             DataTable table = new DataTable();
             using (SqlConnection connection = new SqlConnection(sqlDataSource))
             {
@@ -111,7 +111,7 @@ namespace PhotosServer.Controllers
                 using (SqlCommand myCommand = new SqlCommand(query, connection))
                 {
                     myCommand.Parameters.AddWithValue("@PhotoName",photo.PhotoName);
-                    myCommand.Parameters.AddWithValue("@PhotoFolder", photo.PhotoFolder);
+                    myCommand.Parameters.AddWithValue("@FolderID", photo.FolderID);
                     myCommand.Parameters.AddWithValue("@PhotoDate", photo.PhotoDate);
                     myCommand.Parameters.AddWithValue("@PhotoPath", photo.PhotoPath);
                     myReader = myCommand.ExecuteReader();
@@ -136,7 +136,7 @@ namespace PhotosServer.Controllers
             string query = $@"
                            update photos
                            set PhotoName=@PhotoName,
-                            PhotoFolder=@PhotoFolder,
+                            FolderID=@FolderID,
                             PhotoDate=@PhotoDate
                             where PhotoID=@PhotoID
                             ";
@@ -147,7 +147,7 @@ namespace PhotosServer.Controllers
                 using (SqlCommand myCommand = new SqlCommand(query, connection))
                 {
                     myCommand.Parameters.AddWithValue("@PhotoName", photo.PhotoName);
-                    myCommand.Parameters.AddWithValue("@PhotoFolder", photo.PhotoFolder);
+                    myCommand.Parameters.AddWithValue("@FolderID", photo.FolderID);
                     myCommand.Parameters.AddWithValue("@PhotoDate", photo.PhotoDate);
                     myCommand.Parameters.AddWithValue("@PhotoID", id);
                     myReader = myCommand.ExecuteReader();
