@@ -33,8 +33,8 @@ namespace PhotosServer.Controllers
                 {
                     myReader = myCommand.ExecuteReader();
                     table.Load(myReader);
-                    myReader.Close();
-                    connection.Close();
+                    //myReader.Close();
+                   // connection.Close();
                 }
 
             }
@@ -176,8 +176,6 @@ namespace PhotosServer.Controllers
                     myCommand.Parameters.AddWithValue("@PhotoID", id);
                     myReader = myCommand.ExecuteReader();
                     table.Load(myReader);
-                    myReader.Close();
-                    connection.Close();
                 }
             }
         }

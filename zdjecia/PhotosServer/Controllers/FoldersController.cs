@@ -36,6 +36,7 @@ namespace PhotosServer.Controllers
                 }
 
             }
+
             return new JsonResult(table);
         }
         // POST api/<PhotosController>
@@ -66,8 +67,9 @@ namespace PhotosServer.Controllers
             }
 
         }
-
-
+        //
+        // do poprawy bądź usunięcia
+        //
         [HttpPost("Update")]
         public void Update([FromForm] Folder folder)
         {
@@ -113,7 +115,7 @@ namespace PhotosServer.Controllers
         {
             string sqlDataSource = _configuration.GetConnectionString("PhotoAppCon");
             SqlDataReader myReader;
-            string query = $@" UPDATE Folders SET FolderName = @FolderName WHERE FolderId = @FolderID";
+            string query = $@" UPDATE Folders SET name = @FolderName WHERE id = @FolderID";
 
             DataTable table = new DataTable();
             using (SqlConnection connection = new SqlConnection(sqlDataSource))
@@ -145,12 +147,29 @@ namespace PhotosServer.Controllers
             }
         }
 
+
+
+
+        // usunFolderZZawartocia(id)
+        //	    idPodfolderow = dajMiPodfoldery(id)                 1
+        //	    zdiciaWFolderze = dajMiZdieciaWFolderze(id)         2
+        //	    for(zdiecie in zdiciaWFolderze)                     3
+        //		    usunZdiecie(zdiecie )                           4
+        //	    for(idPodfolderu in idPodfolderow)                  5
+        //		    usunFolderZZawartocia(idPodfolderu )            6
+        //	    usunFolder(id)                                      7
+
+
+        // Do zrefaktorania 
+        // Jalepiej przeniść tą funkcjię do bazy danych
+        // Ograniczyć głębokość rekurencji żeby nie przebiło stosu
+
         [HttpPost("ChangeParent")]
         public void ChangeParent([FromForm] IDAndParentID data)
         {
             string sqlDataSource = _configuration.GetConnectionString("PhotoAppCon");
             SqlDataReader myReader;
-            string query = $@" UPDATE Folders SET ParentID = @ParentID WHERE FolderId = @FolderID";
+            string query = $@" UPDATE Folders SET arentId = @ParentID WHERE id = @FolderID";
 
             DataTable table = new DataTable();
             using (SqlConnection connection = new SqlConnection(sqlDataSource))
@@ -178,6 +197,72 @@ namespace PhotosServer.Controllers
                     }
 
                 }            
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public void DeleteWithContents(int id)
+        {
+            Console.WriteLine(id);
+            string sqlDataSource = _configuration.GetConnectionString("PhotoAppCon");
+
+            // Usuwanie zdięć
+
+            string deletePhotosInCurrentFolder = "DELETE FROM Photos WHERE FolderID = @currentFolder";
+
+            DataTable deletedPhosot = new DataTable();
+           
+
+            using (SqlConnection connection = new SqlConnection(sqlDataSource))
+            {
+                connection.Open();
+
+                SqlDataReader myReader;
+           
+                using (SqlCommand myCommand = new SqlCommand(deletePhotosInCurrentFolder, connection))
+                {
+                    myCommand.Parameters.AddWithValue("@currentFolder", id);
+                    myReader = myCommand.ExecuteReader();
+                    deletedPhosot.Load(myReader);
+                    myReader.Close();
+
+                }
+
+
+                // Usuwanie Folderów z Zawartością
+
+                string getSubFolderIDsQuery = "SELECT Folders.id FROM Folders WHERE Folders.parentId = @currentFolder";
+                DataTable subFolderIDs = new DataTable();
+
+                using (SqlCommand myCommand = new SqlCommand(getSubFolderIDsQuery, connection))
+                {
+                    myCommand.Parameters.AddWithValue("@currentFolder", id);
+
+                    //  1 Pobieranie ID podfoderów
+                    myReader = myCommand.ExecuteReader();
+                    subFolderIDs.Load(myReader);
+                    myReader.Close();
+
+                    foreach (DataRow subFolder in subFolderIDs.Rows)
+                    {
+                        Console.WriteLine(subFolder["id"]);
+
+                        // rekurencja
+                        DeleteWithContents(int.Parse(subFolder["id"].ToString()));
+                    }
+                }
+
+                // warunek wyjściowy
+                // usunięcie obecnego folderu
+                DataTable table = new DataTable();
+                string deleteCurrentFolderQuery = "DELETE FROM Folders WHERE id = @currentFolder";
+                using (SqlCommand myCommand = new SqlCommand(deleteCurrentFolderQuery, connection))
+                {
+                    myCommand.Parameters.AddWithValue("@currentFolder", id);
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                }
             }
         }
 
