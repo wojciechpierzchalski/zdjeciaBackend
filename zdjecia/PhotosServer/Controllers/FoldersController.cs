@@ -115,7 +115,7 @@ namespace PhotosServer.Controllers
         {
             string sqlDataSource = _configuration.GetConnectionString("PhotoAppCon");
             SqlDataReader myReader;
-            string query = $@" UPDATE Folders SET arentId = @ParentID WHERE id = @FolderID";
+            string query = $@" UPDATE Folders SET parentId = @ParentID WHERE id = @FolderID";
 
             DataTable table = new DataTable();
             using (SqlConnection connection = new SqlConnection(sqlDataSource))
