@@ -92,9 +92,12 @@ namespace PhotosServer.Controllers
                 }
 
             }
-
-            Byte[] b = System.IO.File.ReadAllBytes(photoPath);
-            return File(b, "image/jpeg");
+            if(System.IO.File.Exists(photoPath))
+            {
+                Byte[] b = System.IO.File.ReadAllBytes(photoPath);
+                return File(b, "image/jpeg");
+            }
+            return StatusCode(500);
         }
         // POST api/<PhotosController>
         [HttpPost]
@@ -161,22 +164,76 @@ namespace PhotosServer.Controllers
         // DELETE api/<PhotosController>/5
         [HttpDelete("{id}")]
         public void Delete(int id)
-        {
+        {            
+
             SqlDataReader myReader;
             string sqlDataSource = _configuration.GetConnectionString("PhotoAppCon");
-            string query = $@"
+
+
+            string getPathQuery = $@" SELECT PhotoPath FROM photos WHERE PhotoID = {id}";
+            string photoPath = "";
+
+
+            string deleteQuery = $@"
                            delete from photos where PhotoID=@PhotoID
                             ";
+
+
+            DataTable table = new DataTable();
+
+
+            using (SqlConnection connection = new SqlConnection(sqlDataSource))
+            {
+                connection.Open();
+
+                using (SqlCommand myCommand = new SqlCommand(getPathQuery, connection))
+                {
+                    using (var reader = myCommand.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            photoPath = reader.GetValue(0).ToString();
+                        }
+                    }
+                }
+                if(!System.IO.File.Exists(photoPath))
+                {
+                    return;
+                }
+                // O tym chyba zapomnieliście
+                System.IO.File.Delete(photoPath);
+
+                using (SqlCommand myCommand = new SqlCommand(deleteQuery, connection))
+                {
+                    myCommand.Parameters.AddWithValue("@PhotoID", id);
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    connection.Close();
+                }
+
+            }
+        }
+
+
+        [HttpPost("ChangeFolder")]
+        public void ChangeFolder([FromForm] IDAndParentID photoIDAnadFolderID)
+        {
+            string sqlDataSource = _configuration.GetConnectionString("PhotoAppCon");
+            string query = "UPDATE Photos SET FolderID = @folderID WHERE PhotoID = @photoID";
+            SqlDataReader myReader;
             DataTable table = new DataTable();
             using (SqlConnection connection = new SqlConnection(sqlDataSource))
             {
                 connection.Open();
                 using (SqlCommand myCommand = new SqlCommand(query, connection))
                 {
-                    myCommand.Parameters.AddWithValue("@PhotoID", id);
+                    myCommand.Parameters.AddWithValue("folderID", photoIDAnadFolderID.FolderID);
+                    myCommand.Parameters.AddWithValue("photoID", photoIDAnadFolderID.ParentID);
                     myReader = myCommand.ExecuteReader();
                     table.Load(myReader);
                 }
+
             }
         }
     }

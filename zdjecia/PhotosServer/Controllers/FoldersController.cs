@@ -67,48 +67,6 @@ namespace PhotosServer.Controllers
             }
 
         }
-        //
-        // do poprawy bądź usunięcia
-        //
-        [HttpPost("Update")]
-        public void Update([FromForm] Folder folder)
-        {
-            string sqlDataSource = _configuration.GetConnectionString("PhotoAppCon");
-            SqlDataReader myReader;
-            string query = $@" UPDATE Folders SET FolderName = @FolderName, FolderDate = @FolderDate, ParentID = @ParentID WHERE FolderId = @FolderID";
-
-            DataTable table = new DataTable();
-            using (SqlConnection connection = new SqlConnection(sqlDataSource))
-            {
-                connection.Open();
-                using (SqlCommand myCommand = new SqlCommand(query, connection))
-                {
-
-                    myCommand.Parameters.AddWithValue("@FolderName", folder.FolderName);
-                    myCommand.Parameters.AddWithValue("@FolderDate", folder.FolderDate);
-                    myCommand.Parameters.AddWithValue("@ParentID", folder.ParentID);
-                    myCommand.Parameters.AddWithValue("@FolderID", folder.FolderID);
-
-                    try
-                    {
-                        myReader = myCommand.ExecuteReader();
-                        table.Load(myReader);
-                        myReader.Close();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                    }
-                    finally
-                    {
-                        connection.Close();
-                    }
-
-
-                }           
-            }
-        }
-
 
         [HttpPost("Rename")]
         public void Rename([FromForm] IDAndName data)
@@ -150,19 +108,7 @@ namespace PhotosServer.Controllers
 
 
 
-        // usunFolderZZawartocia(id)
-        //	    idPodfolderow = dajMiPodfoldery(id)                 1
-        //	    zdiciaWFolderze = dajMiZdieciaWFolderze(id)         2
-        //	    for(zdiecie in zdiciaWFolderze)                     3
-        //		    usunZdiecie(zdiecie )                           4
-        //	    for(idPodfolderu in idPodfolderow)                  5
-        //		    usunFolderZZawartocia(idPodfolderu )            6
-        //	    usunFolder(id)                                      7
 
-
-        // Do zrefaktorania 
-        // Jalepiej przeniść tą funkcjię do bazy danych
-        // Ograniczyć głębokość rekurencji żeby nie przebiło stosu
 
         [HttpPost("ChangeParent")]
         public void ChangeParent([FromForm] IDAndParentID data)
@@ -200,17 +146,27 @@ namespace PhotosServer.Controllers
             }
         }
 
+
+        // usunFolderZZawartocia(id)
+        //	    idPodfolderow = dajMiPodfoldery(id)                 1
+        //	    zdiciaWFolderze = dajMiZdieciaWFolderze(id)         2
+        //	    for(zdiecie in zdiciaWFolderze)                     3
+        //		    usunZdiecie(zdiecie )                           4
+        //	    for(idPodfolderu in idPodfolderow)                  5
+        //		    usunFolderZZawartocia(idPodfolderu )            6
+        //	    usunFolder(id)                                      7
+
+
+        // Do zrefaktorania 
+        // Jalepiej przeniść tą funkcjię do bazy danych
+        // Ograniczyć głębokość rekurencji żeby nie przebiło stosu
+
         [HttpDelete("{id}")]
         public void DeleteWithContents(int id)
         {
             Console.WriteLine(id);
             string sqlDataSource = _configuration.GetConnectionString("PhotoAppCon");
-
-            // Usuwanie zdięć
-
-            string deletePhotosInCurrentFolder = "DELETE FROM Photos WHERE FolderID = @currentFolder";
-
-            DataTable deletedPhosot = new DataTable();
+            
            
 
             using (SqlConnection connection = new SqlConnection(sqlDataSource))
@@ -218,7 +174,41 @@ namespace PhotosServer.Controllers
                 connection.Open();
 
                 SqlDataReader myReader;
-           
+
+                // Usuwanie zdięć z dysku
+
+                string getPhotosPaths = "SELECT Photos.PhotoPath FROM Photos WHERE Photos.FolderID = @currentFolder";
+
+                DataTable pathsToDelete = new DataTable();
+
+                using (SqlCommand myCommand = new SqlCommand(getPhotosPaths, connection))
+                {
+                    myCommand.Parameters.AddWithValue("@currentFolder", id);
+                    myReader = myCommand.ExecuteReader();
+                    pathsToDelete.Load(myReader);
+                    myReader.Close();
+
+                    foreach (DataRow path in pathsToDelete.Rows)
+                    {
+                        string photoPath = path["PhotoPath"].ToString();
+
+                        Console.WriteLine(photoPath);
+
+                        if(System.IO.File.Exists(photoPath))
+                        {
+                            System.IO.File.Delete(photoPath);
+                        }
+                    }
+
+                }
+
+
+                // Usuwanie rekordów zdięć z bazy danych
+
+                string deletePhotosInCurrentFolder = "DELETE FROM Photos WHERE FolderID = @currentFolder";
+
+                DataTable deletedPhosot = new DataTable();
+
                 using (SqlCommand myCommand = new SqlCommand(deletePhotosInCurrentFolder, connection))
                 {
                     myCommand.Parameters.AddWithValue("@currentFolder", id);
