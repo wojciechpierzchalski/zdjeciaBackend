@@ -123,6 +123,7 @@ namespace PhotosServer.Controllers
                     connection.Close();
                 }
             }
+            System.IO.Directory.CreateDirectory("../../../Zdjecia");
             using (var stream = new FileStream(photo.PhotoPath,FileMode.Create,FileAccess.ReadWrite))
             {
                 photo.PhotoFile.CopyTo(stream);
